@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartFAB from "@/components/CartFAB";
+import WhatsAppFAB from "@/components/WhatsAppFAB";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import Location from "./pages/Location";
@@ -21,6 +22,7 @@ const PublicLayout = ({ children }: { children: React.ReactNode }) => (
     <main className="flex-1">{children}</main>
     <Footer />
     <CartFAB />
+    <WhatsAppFAB />
   </div>
 );
 

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Zap, Shield, Truck } from "lucide-react";
+import { ArrowRight, Zap, Shield, Truck, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -34,8 +34,9 @@ const Index = () => {
                   <ArrowRight size={18} />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-secondary-foreground/20 text-secondary-foreground hover:bg-secondary-foreground/10">
+              <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
                 <a href="https://wa.me/593994103005" target="_blank" rel="noopener noreferrer">
+                  <MessageCircle size={18} />
                   Contactar por WhatsApp
                 </a>
               </Button>
