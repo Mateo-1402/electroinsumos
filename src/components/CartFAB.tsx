@@ -2,6 +2,9 @@ import { ShoppingCart, Minus, Plus, Trash2, Send } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -12,20 +15,56 @@ import {
 const CartFAB = () => {
   const { items, totalItems, updateQuantity, removeItem, clearCart } = useCart();
   const [open, setOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [sending, setSending] = useState(false);
 
   if (totalItems === 0) return null;
 
   const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const sendWhatsApp = () => {
-    const lines = items.map(
-      (i) => `- ${i.quantity}x ${i.name} (${i.specifications || "S/E"})`
-    );
-    const msg = `Hola Electroinsumos, deseo cotizar:\n\n${lines.join("\n")}\n\nGracias.`;
-    const encoded = encodeURIComponent(msg);
-    window.open(`https://wa.me/593994103005?text=${encoded}`, "_blank");
-    clearCart();
-    setOpen(false);
+  const sendWhatsApp = async () => {
+    setSending(true);
+    try {
+      // Save order to database
+      const orderItems = items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        specifications: i.specifications,
+        quantity: i.quantity,
+        price: i.price,
+      }));
+
+      const { error } = await supabase.from("orders").insert({
+        customer_name: customerName || null,
+        total_price: total,
+        status: "pending",
+        items: orderItems as any,
+      });
+
+      if (error) {
+        toast.error("Error al guardar pedido: " + error.message);
+        setSending(false);
+        return;
+      }
+
+      // Send WhatsApp
+      const lines = items.map(
+        (i) => `- ${i.quantity}x ${i.name} (${i.specifications || "S/E"}) — $${(i.price * i.quantity).toFixed(2)}`
+      );
+      const nameLine = customerName ? `*Cliente:* ${customerName}\n` : "";
+      const msg = `Hola Electroinsumos, deseo cotizar:\n\n${nameLine}${lines.join("\n")}\n\n*Total: $${total.toFixed(2)}*\n\nGracias.`;
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://wa.me/593994103005?text=${encoded}`, "_blank");
+
+      toast.success("Pedido registrado correctamente");
+      clearCart();
+      setCustomerName("");
+      setOpen(false);
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -46,6 +85,13 @@ const CartFAB = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Resumen de Cotización</DialogTitle>
           </DialogHeader>
+
+          <Input
+            placeholder="Tu nombre (opcional)"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="mt-2"
+          />
 
           <div className="space-y-3 mt-2">
             {items.map((item) => (
@@ -70,9 +116,9 @@ const CartFAB = () => {
             <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
           </div>
 
-          <Button onClick={sendWhatsApp} className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
+          <Button onClick={sendWhatsApp} disabled={sending} className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
             <Send size={18} />
-            Enviar Pedido por WhatsApp
+            {sending ? "Enviando..." : "Enviar Pedido por WhatsApp"}
           </Button>
         </DialogContent>
       </Dialog>
