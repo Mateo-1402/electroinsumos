@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon, Package, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
@@ -19,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminOrders from "@/components/AdminOrders";
 
 interface Product {
   id: string;
@@ -187,44 +189,59 @@ const Admin = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-display font-bold">Panel de Inventario</h1>
         <div className="flex gap-2">
-          <Button size="sm" onClick={openAdd} className="gap-1"><Plus size={16} /> Agregar</Button>
           <Button size="sm" variant="outline" onClick={handleLogout} className="gap-1"><LogOut size={16} /> Salir</Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-border rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left p-3 font-medium">Código</th>
-              <th className="text-left p-3 font-medium">Nombre</th>
-              <th className="text-left p-3 font-medium hidden md:table-cell">Categoría</th>
-              <th className="text-left p-3 font-medium hidden lg:table-cell">Especificaciones</th>
-              <th className="text-right p-3 font-medium">Precio</th>
-              <th className="text-right p-3 font-medium">Stock</th>
-              <th className="text-right p-3 font-medium">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className={`border-t border-border ${p.stock < 5 ? "bg-destructive/10" : ""}`}>
-                <td className="p-3 font-mono text-xs">{p.code}</td>
-                <td className="p-3">{p.name}</td>
-                <td className="p-3 hidden md:table-cell text-muted-foreground">{p.category}</td>
-                <td className="p-3 hidden lg:table-cell text-muted-foreground">{p.specifications}</td>
-                <td className="p-3 text-right font-semibold">${p.price.toFixed(2)}</td>
-                <td className={`p-3 text-right font-semibold ${p.stock < 5 ? "text-destructive" : ""}`}>{p.stock}</td>
-                <td className="p-3 text-right">
-                  <div className="flex gap-1 justify-end">
-                    <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-muted"><Pencil size={14} /></button>
-                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive"><Trash2 size={14} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Tabs defaultValue="inventory">
+        <TabsList className="mb-4">
+          <TabsTrigger value="inventory" className="gap-1"><Package size={14} /> Inventario</TabsTrigger>
+          <TabsTrigger value="orders" className="gap-1"><ClipboardList size={14} /> Pedidos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inventory">
+          <div className="mb-4">
+            <Button size="sm" onClick={openAdd} className="gap-1"><Plus size={16} /> Agregar Producto</Button>
+          </div>
+          <div className="overflow-x-auto border border-border rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="text-left p-3 font-medium">Código</th>
+                  <th className="text-left p-3 font-medium">Nombre</th>
+                  <th className="text-left p-3 font-medium hidden md:table-cell">Categoría</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">Especificaciones</th>
+                  <th className="text-right p-3 font-medium">Precio</th>
+                  <th className="text-right p-3 font-medium">Stock</th>
+                  <th className="text-right p-3 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id} className={`border-t border-border ${p.stock < 5 ? "bg-destructive/10" : ""}`}>
+                    <td className="p-3 font-mono text-xs">{p.code}</td>
+                    <td className="p-3">{p.name}</td>
+                    <td className="p-3 hidden md:table-cell text-muted-foreground">{p.category}</td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground">{p.specifications}</td>
+                    <td className="p-3 text-right font-semibold">${p.price.toFixed(2)}</td>
+                    <td className={`p-3 text-right font-semibold ${p.stock < 5 ? "text-destructive" : ""}`}>{p.stock}</td>
+                    <td className="p-3 text-right">
+                      <div className="flex gap-1 justify-end">
+                        <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-muted"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <AdminOrders />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
+import WireProductCard from "@/components/WireProductCard";
 import { Input } from "@/components/ui/input";
 
 const CATEGORIES = [
@@ -28,6 +29,15 @@ interface Product {
   stock: number;
   image_url: string | null;
 }
+
+/** Extract the base name by removing AWG/gauge info from the name */
+const getWireBaseName = (name: string): string => {
+  // Remove patterns like "AWG 18", "#18", "Calibre 18", trailing gauge numbers
+  return name
+    .replace(/\s*(AWG|#|calibre|gauge)\s*\d+/gi, "")
+    .replace(/\s*\d+\s*AWG/gi, "")
+    .trim();
+};
 
 const Catalog = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -59,6 +69,21 @@ const Catalog = () => {
       (p.specifications || "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // Group wire products by base name
+  const { wireGroups, nonWireProducts } = useMemo(() => {
+    const wires = filtered.filter((p) => p.category === "Alambres");
+    const nonWires = filtered.filter((p) => p.category !== "Alambres");
+
+    const groups = new Map<string, Product[]>();
+    for (const w of wires) {
+      const base = getWireBaseName(w.name);
+      if (!groups.has(base)) groups.set(base, []);
+      groups.get(base)!.push(w);
+    }
+
+    return { wireGroups: groups, nonWireProducts: nonWires };
+  }, [filtered]);
 
   const setCategory = (cat: string) => {
     if (cat === "Todos") {
@@ -114,7 +139,16 @@ const Catalog = () => {
             <p className="text-muted-foreground text-center py-12">No se encontraron productos.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((p) => (
+              {/* Wire groups */}
+              {Array.from(wireGroups.entries()).map(([baseName, variants]) =>
+                variants.length > 1 ? (
+                  <WireProductCard key={baseName} baseName={baseName} variants={variants} />
+                ) : (
+                  <ProductCard key={variants[0].id} {...variants[0]} />
+                )
+              )}
+              {/* Non-wire products */}
+              {nonWireProducts.map((p) => (
                 <ProductCard key={p.id} {...p} />
               ))}
             </div>
