@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
-import WireProductCard from "@/components/WireProductCard";
+import VariantProductCard from "@/components/WireProductCard";
 import { Input } from "@/components/ui/input";
 
 const CATEGORIES = [
@@ -11,12 +11,16 @@ const CATEGORIES = [
   "Condensadores",
   "Alambres",
   "Aislantes",
+  "Cables",
   "Rodamientos",
   "Sellos",
   "Ventiladores",
   "Químicos",
   "Repuestos",
 ];
+
+// Categories that group by base name with a variant dropdown
+const VARIANT_CATEGORIES = ["Alambres", "Aislantes", "Cables"];
 
 interface Product {
   id: string;
@@ -30,13 +34,19 @@ interface Product {
   image_url: string | null;
 }
 
-/** Extract the base name by removing AWG/gauge info from the name */
-const getWireBaseName = (name: string): string => {
-  // Remove patterns like "AWG 18", "#18", "Calibre 18", trailing gauge numbers
+/** Extract the base name by removing gauge/size info */
+const getBaseName = (name: string): string => {
   return name
     .replace(/\s*(AWG|#|calibre|gauge)\s*\d+/gi, "")
     .replace(/\s*\d+\s*AWG/gi, "")
+    .replace(/\s*\d+(\.\d+)?\s*(mm|cm|m|pulg|")\s*/gi, " ")
     .trim();
+};
+
+const getDropdownLabel = (category: string): string => {
+  if (category === "Alambres") return "Seleccionar Calibre (AWG)";
+  if (category === "Aislantes" || category === "Cables") return "Seleccionar Medida";
+  return "Seleccionar variante";
 };
 
 const Catalog = () => {
@@ -65,24 +75,24 @@ const Catalog = () => {
     const matchSearch =
       search === "" ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase()) ||
       (p.specifications || "").toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
-  // Group wire products by base name
-  const { wireGroups, nonWireProducts } = useMemo(() => {
-    const wires = filtered.filter((p) => p.category === "Alambres");
-    const nonWires = filtered.filter((p) => p.category !== "Alambres");
+  // Group variant products by base name, keep others separate
+  const { variantGroups, regularProducts } = useMemo(() => {
+    const variants = filtered.filter((p) => VARIANT_CATEGORIES.includes(p.category));
+    const regulars = filtered.filter((p) => !VARIANT_CATEGORIES.includes(p.category));
 
-    const groups = new Map<string, Product[]>();
-    for (const w of wires) {
-      const base = getWireBaseName(w.name);
-      if (!groups.has(base)) groups.set(base, []);
-      groups.get(base)!.push(w);
+    const groups = new Map<string, { category: string; products: Product[] }>();
+    for (const p of variants) {
+      const base = getBaseName(p.name);
+      const key = `${p.category}::${base}`;
+      if (!groups.has(key)) groups.set(key, { category: p.category, products: [] });
+      groups.get(key)!.products.push(p);
     }
 
-    return { wireGroups: groups, nonWireProducts: nonWires };
+    return { variantGroups: groups, regularProducts: regulars };
   }, [filtered]);
 
   const setCategory = (cat: string) => {
@@ -104,7 +114,7 @@ const Catalog = () => {
           <div className="relative mb-4 lg:mb-6">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar..."
+              placeholder="Buscar producto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -139,16 +149,21 @@ const Catalog = () => {
             <p className="text-muted-foreground text-center py-12">No se encontraron productos.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {/* Wire groups */}
-              {Array.from(wireGroups.entries()).map(([baseName, variants]) =>
-                variants.length > 1 ? (
-                  <WireProductCard key={baseName} baseName={baseName} variants={variants} />
+              {/* Variant groups */}
+              {Array.from(variantGroups.entries()).map(([key, { category, products: vars }]) =>
+                vars.length > 1 ? (
+                  <VariantProductCard
+                    key={key}
+                    baseName={getBaseName(vars[0].name)}
+                    variants={vars}
+                    dropdownLabel={getDropdownLabel(category)}
+                  />
                 ) : (
-                  <ProductCard key={variants[0].id} {...variants[0]} />
+                  <ProductCard key={vars[0].id} {...vars[0]} />
                 )
               )}
-              {/* Non-wire products */}
-              {nonWireProducts.map((p) => (
+              {/* Regular products */}
+              {regularProducts.map((p) => (
                 <ProductCard key={p.id} {...p} />
               ))}
             </div>

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface WireProduct {
+interface VariantProduct {
   id: string;
   code: string;
   name: string;
@@ -22,12 +23,13 @@ interface WireProduct {
   image_url: string | null;
 }
 
-interface WireProductCardProps {
+interface VariantProductCardProps {
   baseName: string;
-  variants: WireProduct[];
+  variants: VariantProduct[];
+  dropdownLabel?: string;
 }
 
-const WireProductCard = ({ baseName, variants }: WireProductCardProps) => {
+const VariantProductCard = ({ baseName, variants, dropdownLabel = "Seleccionar variante" }: VariantProductCardProps) => {
   const { addItem } = useCart();
   const [selectedId, setSelectedId] = useState(variants[0]?.id || "");
 
@@ -38,23 +40,27 @@ const WireProductCard = ({ baseName, variants }: WireProductCardProps) => {
 
   if (!selected) return null;
 
+  const outOfStock = selected.stock <= 0;
+
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow animate-fade-in flex flex-col">
-      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
         {selected.image_url ? (
           <img src={selected.image_url} alt={baseName} className="w-full h-full object-cover" />
         ) : (
           <div className="text-muted-foreground text-4xl font-display font-bold opacity-20">EI</div>
         )}
+        {outOfStock && (
+          <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
+        )}
       </div>
       <div className="p-4 flex-1 flex flex-col">
-        <p className="text-xs text-muted-foreground font-mono">{selected.code}</p>
         <h3 className="font-semibold text-sm mt-1 line-clamp-2">{baseName}</h3>
 
         <div className="mt-2">
           <Select value={selectedId} onValueChange={setSelectedId}>
             <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Seleccionar Calibre (AWG)" />
+              <SelectValue placeholder={dropdownLabel} />
             </SelectTrigger>
             <SelectContent>
               {variants.map((v) => (
@@ -78,6 +84,7 @@ const WireProductCard = ({ baseName, variants }: WireProductCardProps) => {
         <Button
           size="sm"
           className="mt-3 w-full gap-1"
+          disabled={outOfStock}
           onClick={() =>
             addItem({
               id: selected.id,
@@ -89,11 +96,11 @@ const WireProductCard = ({ baseName, variants }: WireProductCardProps) => {
           }
         >
           <Plus size={16} />
-          Agregar a Cotización
+          {outOfStock ? "Agotado" : "Agregar a Cotización"}
         </Button>
       </div>
     </div>
   );
 };
 
-export default WireProductCard;
+export default VariantProductCard;

@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductCardProps {
   id: string;
@@ -16,18 +17,21 @@ interface ProductCardProps {
 
 const ProductCard = ({ id, code, name, specifications, price, unit, stock, image_url }: ProductCardProps) => {
   const { addItem } = useCart();
+  const outOfStock = stock <= 0;
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow animate-fade-in flex flex-col">
-      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
         {image_url ? (
           <img src={image_url} alt={name} className="w-full h-full object-cover" />
         ) : (
           <div className="text-muted-foreground text-4xl font-display font-bold opacity-20">EI</div>
         )}
+        {outOfStock && (
+          <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
+        )}
       </div>
       <div className="p-4 flex-1 flex flex-col">
-        <p className="text-xs text-muted-foreground font-mono">{code}</p>
         <h3 className="font-semibold text-sm mt-1 line-clamp-2">{name}</h3>
         {specifications && (
           <p className="text-xs text-muted-foreground mt-1">{specifications}</p>
@@ -45,9 +49,10 @@ const ProductCard = ({ id, code, name, specifications, price, unit, stock, image
           size="sm"
           className="mt-3 w-full gap-1"
           onClick={() => addItem({ id, code, name, specifications, price })}
+          disabled={outOfStock}
         >
           <Plus size={16} />
-          Agregar a Cotización
+          {outOfStock ? "Agotado" : "Agregar a Cotización"}
         </Button>
       </div>
     </div>
