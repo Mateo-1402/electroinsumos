@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon, Package, ClipboardList } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon, Package, ClipboardList, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
@@ -19,8 +19,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminOrders from "@/components/AdminOrders";
+import AdminSalesHistory from "@/components/AdminSalesHistory";
 
 interface Product {
   id: string;
@@ -49,6 +60,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,24 +70,41 @@ const Admin = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      setLoading(false);
+      if (!s) { setLoading(false); setIsAdmin(null); }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      setLoading(false);
+      if (!s) setLoading(false);
     });
     return () => subscription.unsubscribe();
   }, []);
 
+  // Check admin role when session changes
   useEffect(() => {
-    if (session) fetchProducts();
+    if (!session) return;
+    const checkAdmin = async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+      setLoading(false);
+    };
+    checkAdmin();
   }, [session]);
+
+  useEffect(() => {
+    if (session && isAdmin) fetchProducts();
+  }, [session, isAdmin]);
 
   const fetchProducts = async () => {
     const { data } = await supabase.from("products").select("*").order("category").order("name");
@@ -110,31 +139,14 @@ const Admin = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Solo se permiten archivos de imagen");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen no debe superar 5MB");
-      return;
-    }
+    if (!file.type.startsWith("image/")) { toast.error("Solo se permiten archivos de imagen"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("La imagen no debe superar 5MB"); return; }
 
     setUploading(true);
     const ext = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-
-    const { error } = await supabase.storage.from("productos").upload(fileName, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-
-    if (error) {
-      toast.error("Error al subir imagen: " + error.message);
-      setUploading(false);
-      return;
-    }
+    const { error } = await supabase.storage.from("productos").upload(fileName, file, { cacheControl: "3600", upsert: false });
+    if (error) { toast.error("Error al subir imagen: " + error.message); setUploading(false); return; }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`;
     setForm((prev) => ({ ...prev, image_url: publicUrl }));
@@ -144,28 +156,26 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
-    if (!form.code || !form.name || !form.category) {
-      toast.error("Código, nombre y categoría son requeridos");
-      return;
-    }
+    if (!form.code || !form.name || !form.category) { toast.error("Código, nombre y categoría son requeridos"); return; }
     if (editId) {
       const { error } = await supabase.from("products").update(form).eq("id", editId);
       if (error) { toast.error(error.message); return; }
-      toast.success("Producto actualizado");
+      toast.success("Producto actualizado ✅");
     } else {
       const { error } = await supabase.from("products").insert(form);
       if (error) { toast.error(error.message); return; }
-      toast.success("Producto creado");
+      toast.success("Producto creado ✅");
     }
     setDialogOpen(false);
     fetchProducts();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este producto?")) return;
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("products").delete().eq("id", deleteId);
+    if (error) { toast.error(error.message); setDeleteId(null); return; }
     toast.success("Producto eliminado");
+    setDeleteId(null);
     fetchProducts();
   };
 
@@ -184,19 +194,30 @@ const Admin = () => {
     );
   }
 
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted">
+        <div className="bg-card p-8 rounded-lg border border-border shadow-sm w-full max-w-sm text-center space-y-4">
+          <h1 className="text-xl font-display font-bold">Acceso Denegado</h1>
+          <p className="text-sm text-muted-foreground">No tienes permisos de administrador.</p>
+          <Button variant="outline" onClick={handleLogout}>Cerrar Sesión</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-display font-bold">Panel de Inventario</h1>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleLogout} className="gap-1"><LogOut size={16} /> Salir</Button>
-        </div>
+        <Button size="sm" variant="outline" onClick={handleLogout} className="gap-1"><LogOut size={16} /> Salir</Button>
       </div>
 
       <Tabs defaultValue="inventory">
         <TabsList className="mb-4">
           <TabsTrigger value="inventory" className="gap-1"><Package size={14} /> Inventario</TabsTrigger>
           <TabsTrigger value="orders" className="gap-1"><ClipboardList size={14} /> Pedidos</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1"><History size={14} /> Historial</TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory">
@@ -228,7 +249,7 @@ const Admin = () => {
                     <td className="p-3 text-right">
                       <div className="flex gap-1 justify-end">
                         <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-muted"><Pencil size={14} /></button>
-                        <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive"><Trash2 size={14} /></button>
+                        <button onClick={() => setDeleteId(p.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -241,8 +262,13 @@ const Admin = () => {
         <TabsContent value="orders">
           <AdminOrders />
         </TabsContent>
+
+        <TabsContent value="history">
+          <AdminSalesHistory />
+        </TabsContent>
       </Tabs>
 
+      {/* Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -252,11 +278,9 @@ const Admin = () => {
             <Input placeholder="Código" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             <Input placeholder="Nombre" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <Select value={form.category} onValueChange={(val) => setForm({ ...form, category: val })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
               <SelectContent>
-                {["Condensadores", "Alambres", "Aislantes", "Rodamientos", "Sellos", "Ventiladores", "Químicos", "Repuestos"].map((cat) => (
+                {["Condensadores", "Alambres", "Aislantes", "Cables", "Rodamientos", "Sellos", "Ventiladores", "Químicos", "Repuestos"].map((cat) => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
@@ -271,13 +295,7 @@ const Admin = () => {
             {/* Image Upload */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Imagen del producto</label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2"
@@ -293,12 +311,8 @@ const Admin = () => {
                 {uploading && <span className="text-xs text-primary animate-pulse">Subiendo...</span>}
               </div>
               {imagePreview && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => { setImagePreview(null); setForm((prev) => ({ ...prev, image_url: null })); }}
-                >
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground"
+                  onClick={() => { setImagePreview(null); setForm((prev) => ({ ...prev, image_url: null })); }}>
                   Quitar imagen
                 </Button>
               )}
@@ -308,6 +322,22 @@ const Admin = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este producto?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer. El producto será eliminado permanentemente del inventario.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

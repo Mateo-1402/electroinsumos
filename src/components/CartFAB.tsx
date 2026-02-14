@@ -25,7 +25,6 @@ const CartFAB = () => {
   const sendWhatsApp = async () => {
     setSending(true);
     try {
-      // Save order to database
       const orderItems = items.map((i) => ({
         id: i.id,
         name: i.name,
@@ -47,7 +46,6 @@ const CartFAB = () => {
         return;
       }
 
-      // Send WhatsApp
       const lines = items.map(
         (i) => `- ${i.quantity}x ${i.name} (${i.specifications || "S/E"}) — $${(i.price * i.quantity).toFixed(2)}`
       );
@@ -56,7 +54,7 @@ const CartFAB = () => {
       const encoded = encodeURIComponent(msg);
       window.open(`https://wa.me/593994103005?text=${encoded}`, "_blank");
 
-      toast.success("Pedido registrado correctamente");
+      toast.success("¡Pedido registrado correctamente! ✅");
       clearCart();
       setCustomerName("");
       setOpen(false);
@@ -98,8 +96,12 @@ const CartFAB = () => {
               <div key={item.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.specifications}</p>
-                  <p className="text-xs font-semibold text-primary">${item.price.toFixed(2)}</p>
+                  {item.specifications && (
+                    <p className="text-xs text-muted-foreground">{item.specifications}</p>
+                  )}
+                  <p className="text-xs font-semibold text-primary">
+                    ${item.price.toFixed(2)} × {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 rounded hover:bg-background"><Minus size={14} /></button>
@@ -112,8 +114,8 @@ const CartFAB = () => {
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-            <span className="font-display font-semibold">Total estimado:</span>
-            <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+            <span className="font-display font-semibold text-lg">Total del Pedido:</span>
+            <span className="text-xl font-bold text-primary">${total.toFixed(2)}</span>
           </div>
 
           <Button onClick={sendWhatsApp} disabled={sending} className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground gap-2">

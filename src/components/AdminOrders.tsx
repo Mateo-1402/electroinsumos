@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface OrderItem {
   id: string;
@@ -16,6 +23,7 @@ interface Order {
   id: string;
   customer_name: string | null;
   total_price: number | null;
+  total_final_pagado: number | null;
   status: string;
   items: OrderItem[];
   created_at: string;
@@ -25,6 +33,8 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<Order | null>(null);
+  const [finalPrice, setFinalPrice] = useState("");
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -40,34 +50,30 @@ const AdminOrders = () => {
     fetchOrders();
   }, []);
 
-  const confirmOrder = async (order: Order) => {
-    setConfirming(order.id);
-    try {
-      // Update stock for each item
-      for (const item of order.items) {
-        const { data: product } = await supabase
-          .from("products")
-          .select("stock")
-          .eq("id", item.id)
-          .single();
+  const openConfirmModal = (order: Order) => {
+    setConfirmModal(order);
+    setFinalPrice((order.total_price || 0).toFixed(2));
+  };
 
-        if (product) {
-          const newStock = Math.max(0, (product.stock || 0) - item.quantity);
-          await supabase
-            .from("products")
-            .update({ stock: newStock })
-            .eq("id", item.id);
-        }
+  const confirmOrder = async () => {
+    if (!confirmModal) return;
+    setConfirming(confirmModal.id);
+    try {
+      const price = parseFloat(finalPrice);
+      if (isNaN(price) || price < 0) {
+        toast.error("Ingresa un precio válido");
+        setConfirming(null);
+        return;
       }
 
-      // Mark order as completed
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "completed" })
-        .eq("id", order.id);
+      const { error } = await supabase.rpc("confirm_order", {
+        p_order_id: confirmModal.id,
+        p_final_price: price,
+      });
 
       if (error) throw error;
-      toast.success("Venta confirmada y stock actualizado");
+      toast.success("¡Venta confirmada y stock actualizado con éxito! ✅");
+      setConfirmModal(null);
       fetchOrders();
     } catch (err: any) {
       toast.error("Error al confirmar: " + err.message);
@@ -111,7 +117,7 @@ const AdminOrders = () => {
               <OrderCard
                 key={order.id}
                 order={order}
-                onConfirm={() => confirmOrder(order)}
+                onConfirm={() => openConfirmModal(order)}
                 onCancel={() => cancelOrder(order.id)}
                 confirming={confirming === order.id}
               />
@@ -147,6 +153,44 @@ const AdminOrders = () => {
           </div>
         </section>
       )}
+
+      {/* Confirm Sale Modal */}
+      <Dialog open={!!confirmModal} onOpenChange={(open) => !open && setConfirmModal(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Confirmar Venta</DialogTitle>
+          </DialogHeader>
+          {confirmModal && (
+            <div className="space-y-4 mt-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Cliente: {confirmModal.customer_name || "Anónimo"}</p>
+                <p className="text-sm text-muted-foreground">
+                  Precio original: <span className="font-semibold text-foreground">${(confirmModal.total_price || 0).toFixed(2)}</span>
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Precio Final de Venta</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={finalPrice}
+                  onChange={(e) => setFinalPrice(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Modifica si hubo rebaja o negociación.</p>
+              </div>
+              <Button
+                onClick={confirmOrder}
+                disabled={confirming === confirmModal.id}
+                className="w-full gap-1"
+              >
+                <CheckCircle size={16} />
+                {confirming === confirmModal.id ? "Procesando..." : "Confirmar y Descontar Stock"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -157,7 +201,7 @@ const OrderCard = ({
   onCancel,
   confirming,
 }: {
-  order: { id: string; customer_name: string | null; total_price: number | null; status: string; items: OrderItem[]; created_at: string };
+  order: Order;
   onConfirm?: () => void;
   onCancel?: () => void;
   confirming?: boolean;
@@ -172,7 +216,12 @@ const OrderCard = ({
             {date.toLocaleDateString("es-EC")} {date.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
-        <span className="text-lg font-bold text-primary">${(order.total_price || 0).toFixed(2)}</span>
+        <div className="text-right">
+          <span className="text-lg font-bold text-primary">${(order.total_price || 0).toFixed(2)}</span>
+          {order.total_final_pagado != null && order.total_final_pagado !== order.total_price && (
+            <p className="text-xs text-accent font-semibold">Vendido: ${order.total_final_pagado.toFixed(2)}</p>
+          )}
+        </div>
       </div>
       <div className="space-y-1 mb-3">
         {order.items.map((item, i) => (
