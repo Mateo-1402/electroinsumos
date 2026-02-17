@@ -165,11 +165,10 @@ const Admin = () => {
     const validatedData = validation.data;
     if (editId) {
       const { error } = await supabase.from("products").update(validatedData).eq("id", editId);
-      const { error } = await supabase.from("products").update(form).eq("id", editId);
       if (error) { toast.error(error.message); return; }
       toast.success("Producto actualizado ✅");
     } else {
-      const { error } = await supabase.from("products").insert(validatedData);
+      const { error } = await supabase.from("products").insert(validatedData as any);
       if (error) { toast.error(error.message); return; }
       toast.success("Producto creado ✅");
     }
