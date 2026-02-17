@@ -13,6 +13,7 @@ import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon, Package, Clipboa
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
+import { productSchema } from "@/lib/validation";
 import {
   Dialog,
   DialogContent,
@@ -156,13 +157,19 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
-    if (!form.code || !form.name || !form.category) { toast.error("Código, nombre y categoría son requeridos"); return; }
+    const validation = productSchema.safeParse(form);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
+      return;
+    }
+    const validatedData = validation.data;
     if (editId) {
+      const { error } = await supabase.from("products").update(validatedData).eq("id", editId);
       const { error } = await supabase.from("products").update(form).eq("id", editId);
       if (error) { toast.error(error.message); return; }
       toast.success("Producto actualizado ✅");
     } else {
-      const { error } = await supabase.from("products").insert(form);
+      const { error } = await supabase.from("products").insert(validatedData);
       if (error) { toast.error(error.message); return; }
       toast.success("Producto creado ✅");
     }

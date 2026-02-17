@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { orderSchema } from "@/lib/validation";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +34,25 @@ const CartFAB = () => {
         price: i.price,
       }));
 
-      const { error } = await supabase.from("orders").insert({
+      const orderData = {
         customer_name: customerName || null,
         total_price: total,
-        status: "pending",
-        items: orderItems as any,
+        status: "pending" as const,
+        items: orderItems,
+      };
+
+      const validation = orderSchema.safeParse(orderData);
+      if (!validation.success) {
+        toast.error("Error de validación: " + validation.error.errors[0].message);
+        setSending(false);
+        return;
+      }
+
+      const { error } = await supabase.from("orders").insert({
+        customer_name: validation.data.customer_name,
+        total_price: validation.data.total_price,
+        status: validation.data.status,
+        items: validation.data.items as any,
       });
 
       if (error) {
