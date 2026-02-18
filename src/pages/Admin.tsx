@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, Plus, Pencil, Trash2, Save, Upload, ImageIcon, Package, ClipboardList, History } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Save, Package, ClipboardList, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
@@ -57,7 +57,7 @@ const EMPTY: Omit<Product, "id"> = {
   image_url: null,
 };
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 
 const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -69,10 +69,8 @@ const Admin = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -137,24 +135,6 @@ const Admin = () => {
     setDialogOpen(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Solo se permiten archivos de imagen"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("La imagen no debe superar 5MB"); return; }
-
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-    const { error } = await supabase.storage.from("productos").upload(fileName, file, { cacheControl: "3600", upsert: false });
-    if (error) { toast.error("Error al subir imagen: " + error.message); setUploading(false); return; }
-
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`;
-    setForm((prev) => ({ ...prev, image_url: publicUrl }));
-    setImagePreview(publicUrl);
-    setUploading(false);
-    toast.success("Imagen subida correctamente");
-  };
 
   const handleSave = async () => {
     const validation = productSchema.safeParse(form);
@@ -298,33 +278,24 @@ const Admin = () => {
               <Input type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })} />
             </div>
 
-            {/* Image Upload */}
+            {/* Image URL */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Imagen del producto</label>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-2"
-              >
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="w-full h-32 object-contain rounded" />
-                ) : (
-                  <>
-                    <ImageIcon size={32} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Click para subir imagen</span>
-                  </>
-                )}
-                {uploading && <span className="text-xs text-primary animate-pulse">Subiendo...</span>}
-              </div>
+              <label className="text-sm font-medium text-foreground">URL de imagen</label>
+              <Input
+                placeholder="https://... (pega el link de la imagen)"
+                value={form.image_url || ""}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  setForm((prev) => ({ ...prev, image_url: url || null }));
+                  setImagePreview(url || null);
+                }}
+              />
               {imagePreview && (
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground"
-                  onClick={() => { setImagePreview(null); setForm((prev) => ({ ...prev, image_url: null })); }}>
-                  Quitar imagen
-                </Button>
+                <img src={imagePreview} alt="Preview" className="w-full h-32 object-contain rounded border border-border" onError={() => setImagePreview(null)} />
               )}
             </div>
 
-            <Button onClick={handleSave} disabled={uploading} className="w-full gap-1"><Save size={16} /> Guardar</Button>
+            <Button onClick={handleSave} className="w-full gap-1"><Save size={16} /> Guardar</Button>
           </div>
         </DialogContent>
       </Dialog>
