@@ -12,7 +12,7 @@ const Location = () => (
             <MapPin size={20} className="text-primary mt-0.5 shrink-0" />
             <div>
               <h3 className="font-semibold">Dirección</h3>
-              <p className="text-sm text-muted-foreground">Quito, Ecuador – Sector Sur</p>
+              <p className="text-sm text-muted-foreground">Av. Galo Plaza Lasso y De Los Eucaliptos, Quito 170144</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -43,7 +43,7 @@ const Location = () => (
       <div className="rounded-lg overflow-hidden border border-border h-80 lg:h-auto bg-muted">
         <iframe
           title="Ubicación Electroinsumos"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63835.0!2d-78.52!3d-0.22!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d59a4002427c9f%3A0x44e4715c21d04820!2sQuito!5e0!3m2!1ses!2sec!4v1700000000000!5m2!1ses!2sec"
+          src="https://maps.google.com/maps?q=VGMC%2BH46+Quito+170144&output=embed"
           width="100%"
           height="100%"
           style={{ border: 0, minHeight: 320 }}

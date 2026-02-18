@@ -15,7 +15,7 @@ const Footer = () => (
         <h4 className="font-display font-semibold text-lg">Contacto</h4>
         <div className="flex items-start gap-2 text-sm opacity-80">
           <MapPin size={16} className="mt-0.5 shrink-0" />
-          <span>Quito, Ecuador – Sector Sur</span>
+          <span>Av. Galo Plaza Lasso y De Los Eucaliptos, Quito 170144</span>
         </div>
         <div className="flex items-center gap-2 text-sm opacity-80">
           <Phone size={16} className="shrink-0" />
