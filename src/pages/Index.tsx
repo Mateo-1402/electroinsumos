@@ -1,6 +1,29 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Zap, Shield, Truck, MessageCircle, ShoppingCart, Send, Handshake } from "lucide-react";
+import { ArrowRight, Zap, Shield, Truck, MessageCircle, ShoppingCart, Send, Handshake, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const slides = [
+  {
+    title: "Especialistas en Insumos Eléctricos",
+    desc: "Todo para el rebobinado y mantenimiento de motores.",
+    cta: "Ver Catálogo",
+    ctaLink: "/catalogo",
+  },
+  {
+    title: "Calidad y Variedad Garantizada",
+    desc: "Alambres de cobre, condensadores y repuestos de alta durabilidad.",
+    cta: "Explorar Productos",
+    ctaLink: "/catalogo",
+  },
+  {
+    title: "Pedidos Rápidos por WhatsApp",
+    desc: "Compra en línea y coordina la entrega en minutos.",
+    cta: "Contactar Ahora",
+    ctaLink: "https://wa.me/593994103005",
+    external: true,
+  },
+];
 
 const features = [
   { icon: Zap, title: "Calidad Industrial", desc: "Productos certificados para uso profesional en rebobinado de motores." },
@@ -19,34 +42,74 @@ const categories = [
 ];
 
 const Index = () => {
+  const [current, setCurrent] = useState(0);
+
+  const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), []);
+  const prev = useCallback(() => setCurrent((c) => (c - 1 + slides.length) % slides.length), []);
+
+  useEffect(() => {
+    const timer = setInterval(next, 6000);
+    return () => clearInterval(timer);
+  }, [next]);
+
+  const slide = slides[current];
+
   return (
     <div>
-      {/* Hero */}
-      <section className="bg-secondary text-secondary-foreground">
-        <div className="container mx-auto px-4 py-20 md:py-28">
-          <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-tight">
-              Insumos para{" "}
-              <span className="text-primary">rebobinado</span>{" "}
-              de motores
+      {/* Hero Carousel */}
+      <section className="relative bg-secondary text-secondary-foreground overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/95 via-secondary/80 to-secondary/60 z-10" />
+        <div className="container mx-auto px-4 py-20 md:py-28 relative z-20">
+          <div className="max-w-2xl min-h-[180px]">
+            <h1
+              key={`title-${current}`}
+              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold leading-tight animate-fade-in"
+            >
+              {slide.title}
             </h1>
-            <p className="mt-4 text-lg opacity-80 max-w-lg">
-              Todo lo que necesitas para reparar y mantener motores eléctricos. Condensadores, alambres de cobre, rodamientos y más.
+            <p
+              key={`desc-${current}`}
+              className="mt-4 text-lg opacity-80 max-w-lg animate-fade-in"
+            >
+              {slide.desc}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="gap-2">
-                <Link to="/catalogo">
-                  Ver Catálogo
-                  <ArrowRight size={18} />
-                </Link>
-              </Button>
-              <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
-                <a href="https://wa.me/593994103005" target="_blank" rel="noopener noreferrer">
-                  <MessageCircle size={18} />
-                  Contactar por WhatsApp
-                </a>
-              </Button>
+              {slide.external ? (
+                <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
+                  <a href={slide.ctaLink} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle size={18} />
+                    {slide.cta}
+                  </a>
+                </Button>
+              ) : (
+                <Button asChild size="lg" className="gap-2">
+                  <Link to={slide.ctaLink}>
+                    {slide.cta}
+                    <ArrowRight size={18} />
+                  </Link>
+                </Button>
+              )}
             </div>
+          </div>
+
+          {/* Carousel Controls */}
+          <div className="flex items-center gap-3 mt-8">
+            <button onClick={prev} className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 transition-colors" aria-label="Anterior">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex gap-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrent(i)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${i === current ? "bg-primary w-6" : "bg-secondary-foreground/30"}`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+            <button onClick={next} className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 transition-colors" aria-label="Siguiente">
+              <ChevronRight size={20} />
+            </button>
           </div>
         </div>
       </section>
