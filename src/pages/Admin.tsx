@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, Plus, Pencil, Trash2, Save, Package, ClipboardList, History } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Save, Package, ClipboardList, History, Store } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminOrders from "@/components/AdminOrders";
 import AdminSalesHistory from "@/components/AdminSalesHistory";
+import AdminPOS from "@/components/AdminPOS";
 
 interface Product {
   id: string;
@@ -200,8 +201,9 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="inventory">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="inventory" className="gap-1"><Package size={14} /> Inventario</TabsTrigger>
+          <TabsTrigger value="pos" className="gap-1"><Store size={14} /> Mostrador</TabsTrigger>
           <TabsTrigger value="orders" className="gap-1"><ClipboardList size={14} /> Pedidos</TabsTrigger>
           <TabsTrigger value="history" className="gap-1"><History size={14} /> Historial</TabsTrigger>
         </TabsList>
@@ -243,6 +245,10 @@ const Admin = () => {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+
+        <TabsContent value="pos">
+          <AdminPOS />
         </TabsContent>
 
         <TabsContent value="orders">

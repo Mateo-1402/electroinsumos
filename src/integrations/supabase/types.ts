@@ -20,6 +20,7 @@ export type Database = {
           customer_name: string | null
           id: string
           items: Json
+          source: string
           status: string
           total_final_pagado: number | null
           total_price: number | null
@@ -29,6 +30,7 @@ export type Database = {
           customer_name?: string | null
           id?: string
           items?: Json
+          source?: string
           status?: string
           total_final_pagado?: number | null
           total_price?: number | null
@@ -38,6 +40,7 @@ export type Database = {
           customer_name?: string | null
           id?: string
           items?: Json
+          source?: string
           status?: string
           total_final_pagado?: number | null
           total_price?: number | null
@@ -109,6 +112,10 @@ export type Database = {
       confirm_order: {
         Args: { p_final_price: number; p_order_id: string }
         Returns: undefined
+      }
+      create_pos_sale: {
+        Args: { p_customer_name: string; p_final_price: number; p_items: Json }
+        Returns: string
       }
       has_role: {
         Args: {

@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Smartphone, Store } from "lucide-react";
 
 interface HistoryOrder {
   id: string;
   customer_name: string | null;
   total_price: number | null;
   total_final_pagado: number | null;
+  source: string;
   created_at: string;
   items: any[];
 }
@@ -64,7 +65,13 @@ const AdminSalesHistory = () => {
               <div key={order.id} className="border border-border rounded-lg p-4 bg-card">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="font-medium text-sm">{order.customer_name || "Cliente anónimo"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{order.customer_name || "Cliente anónimo"}</p>
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${order.source === 'physical' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
+                        {order.source === 'physical' ? <Store size={10} /> : <Smartphone size={10} />}
+                        {order.source === 'physical' ? 'Mostrador' : 'WhatsApp'}
+                      </span>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {date.toLocaleDateString("es-EC")} {date.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}
                     </p>
