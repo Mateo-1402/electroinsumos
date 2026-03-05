@@ -6,8 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import VariantProductCard from "@/components/WireProductCard";
 import { Input } from "@/components/ui/input";
 
-const CATEGORIES = [
-  "Todos",
+const DEFAULT_CATEGORIES = [
   "Condensadores",
   "Alambres",
   "Aislantes",
@@ -69,6 +68,13 @@ const Catalog = () => {
     };
     fetchProducts();
   }, []);
+
+  // Build dynamic categories from products + defaults
+  const CATEGORIES = useMemo(() => {
+    const fromProducts = new Set(products.map((p) => p.category));
+    const merged = new Set([...DEFAULT_CATEGORIES, ...fromProducts]);
+    return ["Todos", ...Array.from(merged).sort()];
+  }, [products]);
 
   const filtered = products.filter((p) => {
     const matchCat = activeCategory === "Todos" || p.category === activeCategory;

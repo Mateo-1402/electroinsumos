@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const VALID_CATEGORIES = [
+export const DEFAULT_CATEGORIES = [
   "Condensadores",
   "Alambres",
   "Aislantes",
@@ -15,7 +15,7 @@ export const VALID_CATEGORIES = [
 export const productSchema = z.object({
   code: z.string().trim().min(1, "Código requerido").max(50, "Código muy largo"),
   name: z.string().trim().min(1, "Nombre requerido").max(200, "Nombre muy largo"),
-  category: z.enum(VALID_CATEGORIES, { errorMap: () => ({ message: "Categoría inválida" }) }),
+  category: z.string().trim().min(1, "Categoría requerida").max(50, "Categoría muy larga"),
   specifications: z.string().max(500, "Especificaciones muy largas").nullable().optional(),
   price: z.number().min(0, "El precio no puede ser negativo").max(999999, "Precio excede el máximo"),
   unit: z.string().max(50, "Unidad muy larga").nullable().optional(),
