@@ -117,6 +117,7 @@ export type Database = {
         Args: { p_customer_name: string; p_final_price: number; p_items: Json }
         Returns: string
       }
+      create_workshop_usage: { Args: { p_items: Json }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -2,14 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { LogOut, Plus, Pencil, Trash2, Save, Package, ClipboardList, History, Store } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Save, Package, ClipboardList, History, Store, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
@@ -34,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminOrders from "@/components/AdminOrders";
 import AdminSalesHistory from "@/components/AdminSalesHistory";
 import AdminPOS from "@/components/AdminPOS";
+import AdminWorkshop from "@/components/AdminWorkshop";
+import CategoryCombobox from "@/components/CategoryCombobox";
 
 interface Product {
   id: string;
@@ -204,6 +199,7 @@ const Admin = () => {
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="inventory" className="gap-1"><Package size={14} /> Inventario</TabsTrigger>
           <TabsTrigger value="pos" className="gap-1"><Store size={14} /> Mostrador</TabsTrigger>
+          <TabsTrigger value="workshop" className="gap-1"><Wrench size={14} /> Taller</TabsTrigger>
           <TabsTrigger value="orders" className="gap-1"><ClipboardList size={14} /> Pedidos</TabsTrigger>
           <TabsTrigger value="history" className="gap-1"><History size={14} /> Historial</TabsTrigger>
         </TabsList>
@@ -251,6 +247,10 @@ const Admin = () => {
           <AdminPOS />
         </TabsContent>
 
+        <TabsContent value="workshop">
+          <AdminWorkshop />
+        </TabsContent>
+
         <TabsContent value="orders">
           <AdminOrders />
         </TabsContent>
@@ -269,14 +269,11 @@ const Admin = () => {
           <div className="space-y-3 mt-2">
             <Input placeholder="Código" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             <Input placeholder="Nombre" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <Select value={form.category} onValueChange={(val) => setForm({ ...form, category: val })}>
-              <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
-              <SelectContent>
-                {["Condensadores", "Alambres", "Aislantes", "Cables", "Rodamientos", "Sellos", "Ventiladores", "Químicos", "Repuestos"].map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategoryCombobox
+              value={form.category}
+              onChange={(val) => setForm({ ...form, category: val })}
+              existingCategories={[...new Set(products.map((p) => p.category))]}
+            />
             <Input placeholder="Especificaciones" value={form.specifications || ""} onChange={(e) => setForm({ ...form, specifications: e.target.value })} />
             <div className="grid grid-cols-3 gap-2">
               <Input type="number" placeholder="Precio" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} />

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Smartphone, Store } from "lucide-react";
+import { TrendingUp, Smartphone, Store, Wrench } from "lucide-react";
 
 interface HistoryOrder {
   id: string;
@@ -30,12 +30,22 @@ const AdminSalesHistory = () => {
     fetch();
   }, []);
 
-  const weeklyRevenue = useMemo(() => {
+  const { weeklyRevenue, workshopUnits } = useMemo(() => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    return orders
-      .filter((o) => new Date(o.created_at) >= weekAgo)
+    const recentOrders = orders.filter((o) => new Date(o.created_at) >= weekAgo);
+
+    const revenue = recentOrders
+      .filter((o) => o.source !== "workshop")
       .reduce((sum, o) => sum + (o.total_final_pagado ?? o.total_price ?? 0), 0);
+
+    const units = recentOrders
+      .filter((o) => o.source === "workshop")
+      .reduce((sum, o) => {
+        return sum + (o.items as any[]).reduce((s: number, i: any) => s + (i.quantity || 0), 0);
+      }, 0);
+
+    return { weeklyRevenue: revenue, workshopUnits: units };
   }, [orders]);
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">Cargando historial...</div>;
@@ -43,13 +53,24 @@ const AdminSalesHistory = () => {
   return (
     <div className="space-y-6">
       {/* Weekly Summary */}
-      <div className="bg-accent/10 border border-accent/30 rounded-lg p-5 flex items-center gap-4">
-        <div className="rounded-full bg-accent/20 p-3">
-          <TrendingUp size={24} className="text-accent" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-accent/10 border border-accent/30 rounded-lg p-5 flex items-center gap-4">
+          <div className="rounded-full bg-accent/20 p-3">
+            <TrendingUp size={24} className="text-accent" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Ventas Semanales</p>
+            <p className="text-2xl font-display font-bold text-foreground">${weeklyRevenue.toFixed(2)}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Resumen Semanal (últimos 7 días)</p>
-          <p className="text-2xl font-display font-bold text-foreground">${weeklyRevenue.toFixed(2)}</p>
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-5 flex items-center gap-4">
+          <div className="rounded-full bg-primary/20 p-3">
+            <Wrench size={24} className="text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Consumo Taller (7d)</p>
+            <p className="text-2xl font-display font-bold text-foreground">{workshopUnits} unidades</p>
+          </div>
         </div>
       </div>
 
@@ -67,9 +88,17 @@ const AdminSalesHistory = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{order.customer_name || "Cliente anónimo"}</p>
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${order.source === 'physical' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
-                        {order.source === 'physical' ? <Store size={10} /> : <Smartphone size={10} />}
-                        {order.source === 'physical' ? 'Mostrador' : 'WhatsApp'}
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                        order.source === 'physical' ? 'bg-primary/10 text-primary' :
+                        order.source === 'workshop' ? 'bg-muted text-muted-foreground' :
+                        'bg-accent/10 text-accent'
+                      }`}>
+                        {order.source === 'physical' ? <Store size={10} /> :
+                         order.source === 'workshop' ? <Wrench size={10} /> :
+                         <Smartphone size={10} />}
+                        {order.source === 'physical' ? 'Mostrador' :
+                         order.source === 'workshop' ? 'Taller' :
+                         'WhatsApp'}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
