@@ -54,6 +54,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          min_stock: number
           name: string
           price: number | null
           specifications: string | null
@@ -66,6 +67,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_stock?: number
           name: string
           price?: number | null
           specifications?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          min_stock?: number
           name?: string
           price?: number | null
           specifications?: string | null
