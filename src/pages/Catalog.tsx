@@ -1,24 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import VariantProductCard from "@/components/WireProductCard";
 import { Input } from "@/components/ui/input";
 
 const DEFAULT_CATEGORIES = [
-  "Condensadores",
-  "Alambres",
-  "Aislantes",
-  "Cables",
-  "Rodamientos",
-  "Sellos",
-  "Ventiladores",
-  "Químicos",
-  "Repuestos",
+  "Condensadores", "Alambres", "Aislantes", "Cables",
+  "Rodamientos", "Sellos", "Ventiladores", "Químicos", "Repuestos",
 ];
 
-// Categories that group by base name with a variant dropdown
 const VARIANT_CATEGORIES = ["Alambres", "Aislantes", "Cables"];
 
 interface Product {
@@ -33,7 +25,6 @@ interface Product {
   image_url: string | null;
 }
 
-/** Extract the base name by removing gauge/size info */
 const getBaseName = (name: string): string => {
   return name
     .replace(/\s*(AWG|#|calibre|gauge)\s*\d+/gi, "")
@@ -53,6 +44,7 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const activeCategory = searchParams.get("categoria") || "Todos";
 
   useEffect(() => {
@@ -69,7 +61,6 @@ const Catalog = () => {
     fetchProducts();
   }, []);
 
-  // Build dynamic categories from products + defaults
   const CATEGORIES = useMemo(() => {
     const fromProducts = new Set(products.map((p) => p.category));
     const merged = new Set([...DEFAULT_CATEGORIES, ...fromProducts]);
@@ -85,7 +76,6 @@ const Catalog = () => {
     return matchCat && matchSearch;
   });
 
-  // Group variant products by base name, keep others separate
   const { variantGroups, regularProducts } = useMemo(() => {
     const variants = filtered.filter((p) => VARIANT_CATEGORIES.includes(p.category));
     const regulars = filtered.filter((p) => !VARIANT_CATEGORIES.includes(p.category));
@@ -108,30 +98,40 @@ const Catalog = () => {
       searchParams.set("categoria", cat);
     }
     setSearchParams(searchParams);
+    setMobileSidebarOpen(false);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-display font-bold mb-6">Catálogo de Productos</h1>
+    <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-display font-bold">Catálogo</h1>
+        <button
+          className="lg:hidden flex items-center gap-1.5 text-sm font-medium text-muted-foreground px-3 py-2 rounded-lg bg-muted active:scale-95 transition-transform"
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        >
+          <SlidersHorizontal size={16} />
+          Filtrar
+        </button>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
         {/* Sidebar */}
-        <aside className="lg:w-56 shrink-0 lg:sticky lg:top-24 lg:self-start">
-          <div className="relative mb-4 lg:mb-6">
+        <aside className={`lg:w-56 shrink-0 lg:sticky lg:top-24 lg:self-start ${mobileSidebarOpen ? "block" : "hidden lg:block"}`}>
+          <div className="relative mb-3 lg:mb-6">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar producto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-11"
             />
           </div>
-          <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+          <nav className="flex flex-wrap lg:flex-col gap-2 pb-2 lg:pb-0">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`text-sm font-medium px-3 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                className={`text-sm font-medium px-3 py-2.5 rounded-lg whitespace-nowrap transition-colors active:scale-[0.98] ${
                   activeCategory === cat
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -155,7 +155,6 @@ const Catalog = () => {
             <p className="text-muted-foreground text-center py-12">No se encontraron productos.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {/* Variant groups */}
               {Array.from(variantGroups.entries()).map(([key, { category, products: vars }]) =>
                 vars.length > 1 ? (
                   <VariantProductCard
@@ -168,7 +167,6 @@ const Catalog = () => {
                   <ProductCard key={vars[0].id} {...vars[0]} />
                 )
               )}
-              {/* Regular products */}
               {regularProducts.map((p) => (
                 <ProductCard key={p.id} {...p} />
               ))}

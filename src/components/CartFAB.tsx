@@ -84,7 +84,7 @@ const CartFAB = () => {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
         aria-label="Ver cotización"
       >
         <ShoppingCart size={24} />
@@ -94,7 +94,7 @@ const CartFAB = () => {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] md:max-h-[80vh] overflow-y-auto w-[calc(100%-2rem)] sm:w-full">
           <DialogHeader>
             <DialogTitle className="font-display">Resumen de Cotización</DialogTitle>
           </DialogHeader>
@@ -103,7 +103,7 @@ const CartFAB = () => {
             placeholder="Tu nombre (opcional)"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            className="mt-2"
+            className="mt-2 h-12"
           />
 
           <div className="space-y-3 mt-2">
@@ -119,21 +119,21 @@ const CartFAB = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-1 rounded hover:bg-background"><Minus size={14} /></button>
+                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 rounded hover:bg-background active:scale-95"><Minus size={14} /></button>
                   <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-1 rounded hover:bg-background"><Plus size={14} /></button>
+                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 rounded hover:bg-background active:scale-95"><Plus size={14} /></button>
                 </div>
-                <button onClick={() => removeItem(item.id)} className="p-1 text-destructive hover:bg-destructive/10 rounded"><Trash2 size={16} /></button>
+                <button onClick={() => removeItem(item.id)} className="p-2 text-destructive hover:bg-destructive/10 rounded active:scale-95"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-            <span className="font-display font-semibold text-lg">Total del Pedido:</span>
+            <span className="font-display font-semibold text-lg">Total:</span>
             <span className="text-xl font-bold text-primary">${total.toFixed(2)}</span>
           </div>
 
-          <Button onClick={sendWhatsApp} disabled={sending} className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
+          <Button onClick={sendWhatsApp} disabled={sending} className="w-full mt-4 h-12 bg-accent hover:bg-accent/90 text-accent-foreground gap-2 active:scale-[0.98]">
             <Send size={18} />
             {sending ? "Enviando..." : "Enviar Pedido por WhatsApp"}
           </Button>
