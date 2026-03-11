@@ -89,6 +89,77 @@ export type Database = {
         }
         Relationships: []
       }
+      providers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          id_number: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_number?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_number?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          notes: string | null
+          provider_id: string | null
+          total_cost: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          provider_id?: string | null
+          total_cost?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          provider_id?: string | null
+          total_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -118,6 +189,15 @@ export type Database = {
       }
       create_pos_sale: {
         Args: { p_customer_name: string; p_final_price: number; p_items: Json }
+        Returns: string
+      }
+      create_purchase: {
+        Args: {
+          p_items: Json
+          p_notes?: string
+          p_provider_id: string
+          p_total_cost: number
+        }
         Returns: string
       }
       create_workshop_usage: { Args: { p_items: Json }; Returns: string }
