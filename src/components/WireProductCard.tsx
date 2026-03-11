@@ -46,7 +46,7 @@ const VariantProductCard = ({ baseName, variants, dropdownLabel = "Seleccionar v
     <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow animate-fade-in flex flex-col">
       <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
         {selected.image_url ? (
-          <img src={selected.image_url} alt={baseName} className="w-full h-full object-cover" />
+          <img src={selected.image_url} alt={baseName} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <div className="text-muted-foreground text-4xl font-display font-bold opacity-20">EI</div>
         )}
@@ -59,12 +59,12 @@ const VariantProductCard = ({ baseName, variants, dropdownLabel = "Seleccionar v
 
         <div className="mt-2">
           <Select value={selectedId} onValueChange={setSelectedId}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-11 text-xs">
               <SelectValue placeholder={dropdownLabel} />
             </SelectTrigger>
             <SelectContent>
               {variants.map((v) => (
-                <SelectItem key={v.id} value={v.id} className="text-xs">
+                <SelectItem key={v.id} value={v.id} className="text-xs py-2.5">
                   {v.specifications || v.name} — ${v.price.toFixed(2)}
                 </SelectItem>
               ))}
@@ -83,7 +83,7 @@ const VariantProductCard = ({ baseName, variants, dropdownLabel = "Seleccionar v
         </div>
         <Button
           size="sm"
-          className="mt-3 w-full gap-1"
+          className="mt-3 w-full gap-1 h-11 active:scale-[0.98] transition-transform"
           disabled={outOfStock}
           onClick={() =>
             addItem({

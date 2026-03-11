@@ -14,12 +14,12 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4">
+      <div className="container mx-auto flex items-center justify-between h-14 md:h-16 px-4">
         <Link to="/" className="flex items-center gap-2">
           <img
             src="/logo-electroinsumos.png"
             alt="Electroinsumos"
-            className="h-10 object-contain"
+            className="h-8 md:h-10 object-contain"
           />
         </Link>
 
@@ -40,7 +40,7 @@ const Navbar = () => {
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden p-2 text-foreground"
+          className="md:hidden p-2 text-foreground active:scale-95 transition-transform"
           onClick={() => setOpen(!open)}
           aria-label="Menú"
         >
@@ -50,14 +50,14 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden bg-card border-b border-border px-4 pb-4 space-y-2">
+        <div className="md:hidden bg-card border-b border-border px-4 pb-4 space-y-1">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               onClick={() => setOpen(false)}
-              className={`block py-2 text-sm font-medium ${
-                location.pathname === l.to ? "text-primary" : "text-foreground"
+              className={`block py-3 px-2 text-sm font-medium rounded-lg active:scale-[0.98] transition-all ${
+                location.pathname === l.to ? "text-primary bg-primary/5" : "text-foreground hover:bg-muted"
               }`}
             >
               {l.label}
