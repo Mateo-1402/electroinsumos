@@ -64,14 +64,14 @@ const AdminDashboard = () => {
       <h2 className="text-xl font-display font-bold">Dashboard</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {cards.map((c) => (
-          <Card key={c.label} className="rounded-2xl">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`rounded-xl bg-muted p-3 ${c.color}`}>
+          <Card key={c.label} className="rounded-3xl shadow-md border-0 bg-card">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className={`rounded-2xl bg-muted/60 p-3.5 ${c.color}`}>
                 <c.icon size={24} />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{c.label}</p>
-                <p className="text-2xl font-display font-bold">{c.value}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">{c.label}</p>
+                <p className="text-2xl font-display font-bold mt-0.5">{c.value}</p>
               </div>
             </CardContent>
           </Card>
