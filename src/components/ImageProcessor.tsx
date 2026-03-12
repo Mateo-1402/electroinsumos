@@ -11,6 +11,8 @@ interface ImageProcessorProps {
   brandFrameUrl?: string | null;
 }
 
+const DEFAULT_FRAME = "/brand-frame.png";
+
 const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl }: ImageProcessorProps) => {
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState("");
