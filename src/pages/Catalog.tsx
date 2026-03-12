@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import VariantProductCard from "@/components/WireProductCard";
 import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 const DEFAULT_CATEGORIES = [
   "Condensadores", "Alambres", "Aislantes", "Cables",
@@ -12,6 +21,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const VARIANT_CATEGORIES = ["Alambres", "Aislantes", "Cables"];
+const PRODUCTS_PER_PAGE = 12;
 
 interface Product {
   id: string;
@@ -46,6 +56,7 @@ const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const activeCategory = searchParams.get("categoria") || "Todos";
+  const currentPage = parseInt(searchParams.get("pagina") || "1", 10);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -76,7 +87,8 @@ const Catalog = () => {
     return matchCat && matchSearch;
   });
 
-  const { variantGroups, regularProducts } = useMemo(() => {
+  // Build display items (variant groups + regular products) as a flat list for pagination
+  const displayItems = useMemo(() => {
     const variants = filtered.filter((p) => VARIANT_CATEGORIES.includes(p.category));
     const regulars = filtered.filter((p) => !VARIANT_CATEGORIES.includes(p.category));
 
@@ -88,17 +100,69 @@ const Catalog = () => {
       groups.get(key)!.products.push(p);
     }
 
-    return { variantGroups: groups, regularProducts: regulars };
+    const items: { type: "variant"; key: string; category: string; products: Product[] }[] | { type: "regular"; product: Product }[] = [];
+    for (const [key, { category, products: vars }] of groups.entries()) {
+      (items as any[]).push({ type: "variant", key, category, products: vars });
+    }
+    for (const p of regulars) {
+      (items as any[]).push({ type: "regular", product: p });
+    }
+    return items as ({ type: "variant"; key: string; category: string; products: Product[] } | { type: "regular"; product: Product })[];
   }, [filtered]);
 
+  const totalPages = Math.max(1, Math.ceil(displayItems.length / PRODUCTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedItems = displayItems.slice(
+    (safePage - 1) * PRODUCTS_PER_PAGE,
+    safePage * PRODUCTS_PER_PAGE
+  );
+
   const setCategory = (cat: string) => {
+    const newParams = new URLSearchParams(searchParams);
     if (cat === "Todos") {
-      searchParams.delete("categoria");
+      newParams.delete("categoria");
     } else {
-      searchParams.set("categoria", cat);
+      newParams.set("categoria", cat);
     }
-    setSearchParams(searchParams);
+    newParams.delete("pagina");
+    setSearchParams(newParams);
     setMobileSidebarOpen(false);
+  };
+
+  const setPage = (page: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (page <= 1) {
+      newParams.delete("pagina");
+    } else {
+      newParams.set("pagina", String(page));
+    }
+    setSearchParams(newParams);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset page when search changes
+  useEffect(() => {
+    if (currentPage > 1 && search) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("pagina");
+      setSearchParams(newParams);
+    }
+  }, [search]);
+
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (safePage > 3) pages.push("ellipsis");
+      for (let i = Math.max(2, safePage - 1); i <= Math.min(totalPages - 1, safePage + 1); i++) {
+        pages.push(i);
+      }
+      if (safePage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   return (
@@ -151,26 +215,69 @@ const Catalog = () => {
                 <div key={i} className="bg-muted animate-pulse rounded-lg h-80" />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : displayItems.length === 0 ? (
             <p className="text-muted-foreground text-center py-12">No se encontraron productos.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {Array.from(variantGroups.entries()).map(([key, { category, products: vars }]) =>
-                vars.length > 1 ? (
-                  <VariantProductCard
-                    key={key}
-                    baseName={getBaseName(vars[0].name)}
-                    variants={vars}
-                    dropdownLabel={getDropdownLabel(category)}
-                  />
-                ) : (
-                  <ProductCard key={vars[0].id} {...vars[0]} />
-                )
+            <>
+              {/* Results count */}
+              <p className="text-xs text-muted-foreground mb-3">
+                Mostrando {(safePage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(safePage * PRODUCTS_PER_PAGE, displayItems.length)} de {displayItems.length} productos
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {paginatedItems.map((item) =>
+                  item.type === "variant" && item.products.length > 1 ? (
+                    <VariantProductCard
+                      key={item.key}
+                      baseName={getBaseName(item.products[0].name)}
+                      variants={item.products}
+                      dropdownLabel={getDropdownLabel(item.category)}
+                    />
+                  ) : item.type === "variant" ? (
+                    <ProductCard key={item.products[0].id} {...item.products[0]} />
+                  ) : (
+                    <ProductCard key={item.product.id} {...item.product} />
+                  )
+                )}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination className="mt-8">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => safePage > 1 && setPage(safePage - 1)}
+                        className={safePage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {getPageNumbers().map((p, i) =>
+                      p === "ellipsis" ? (
+                        <PaginationItem key={`e-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            isActive={p === safePage}
+                            onClick={() => setPage(p)}
+                            className="cursor-pointer"
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => safePage < totalPages && setPage(safePage + 1)}
+                        className={safePage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               )}
-              {regularProducts.map((p) => (
-                <ProductCard key={p.id} {...p} />
-              ))}
-            </div>
+            </>
           )}
         </main>
       </div>
