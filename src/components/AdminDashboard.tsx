@@ -81,14 +81,15 @@ const AdminDashboard = () => {
       {/* Traffic Light */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { title: "🔴 Agotado (0)", items: products.filter((p) => (p.stock ?? 0) === 0), bg: "bg-destructive/5 border-destructive/20" },
-          { title: "🟠 Bajo Stock", items: products.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.min_stock ?? 5)), bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800" },
-          { title: "🟢 OK", items: products.filter((p) => (p.stock ?? 0) > (p.min_stock ?? 5)), bg: "bg-accent/5 border-accent/20" },
+          { title: "🔴 Agotado", items: products.filter((p) => (p.stock ?? 0) === 0), bg: "bg-red-50/80 border-red-200/60 dark:bg-red-950/20 dark:border-red-800/40" },
+          { title: "🟠 Bajo Stock", items: products.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= (p.min_stock ?? 5)), bg: "bg-amber-50/80 border-amber-200/60 dark:bg-amber-950/20 dark:border-amber-800/40" },
+          { title: "🟢 OK", items: products.filter((p) => (p.stock ?? 0) > (p.min_stock ?? 5)), bg: "bg-emerald-50/80 border-emerald-200/60 dark:bg-emerald-950/20 dark:border-emerald-800/40" },
         ].map((group) => (
-          <Card key={group.title} className={`rounded-2xl border ${group.bg}`}>
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-sm mb-2">{group.title} ({group.items.length})</h3>
+          <Card key={group.title} className={`rounded-3xl border ${group.bg} shadow-sm`}>
+            <CardContent className="p-5">
+              <h3 className="font-semibold text-sm mb-1">{group.title}</h3>
               <p className="text-3xl font-display font-bold">{group.items.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">productos</p>
             </CardContent>
           </Card>
         ))}

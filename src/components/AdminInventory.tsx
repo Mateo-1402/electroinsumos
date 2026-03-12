@@ -327,17 +327,21 @@ const AdminInventory = () => {
                 </Badge>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">URL de imagen</Label>
+            <ImageProcessor
+              currentUrl={form.image_url}
+              onProcessed={(url) => {
+                setForm((prev) => ({ ...prev, image_url: url }));
+                setImagePreview(url);
+              }}
+            />
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">O pegar URL directa</Label>
               <Input
                 placeholder="https://..."
                 value={form.image_url || ""}
                 onChange={(e) => { const url = e.target.value; setForm((prev) => ({ ...prev, image_url: url || null })); setImagePreview(url || null); }}
-                className="h-11"
+                className="h-10 text-xs"
               />
-              {imagePreview && (
-                <img src={imagePreview} alt="Preview" className="w-full h-32 object-contain rounded border border-border" onError={() => setImagePreview(null)} />
-              )}
             </div>
             <Button onClick={handleSave} className="w-full gap-1 h-12 active:scale-[0.98]"><Save size={16} /> Guardar</Button>
           </div>
