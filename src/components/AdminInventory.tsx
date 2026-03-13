@@ -340,6 +340,7 @@ const AdminInventory = () => {
                 setForm((prev) => ({ ...prev, image_url: url }));
                 setImagePreview(url);
               }}
+              onProcessingChange={setIsImageProcessing}
             />
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">O pegar URL directa</Label>
