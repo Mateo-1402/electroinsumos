@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, Check, ImageIcon } from "lucide-react";
+import { Upload, Loader2, Check, ImageIcon, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
 interface ImageProcessorProps {
   currentUrl: string | null;
-  onProcessed: (url: string) => void;
+  onProcessed: (url: string | null) => void;
   onProcessingChange?: (isProcessing: boolean) => void;
 }
 
@@ -28,7 +28,6 @@ const ImageProcessor = ({ currentUrl, onProcessed, onProcessingChange }: ImagePr
     setProgress(30);
     const bitmap = await createImageBitmap(file);
     const canvas = document.createElement("canvas");
-    // Resize if too large (max 1200px)
     const maxSize = 1200;
     let w = bitmap.width;
     let h = bitmap.height;
@@ -91,6 +90,12 @@ const ImageProcessor = ({ currentUrl, onProcessed, onProcessingChange }: ImagePr
     }
   };
 
+  const handleRemoveImage = () => {
+    setPreview(null);
+    onProcessed(null);
+    toast.success("Imagen eliminada");
+  };
+
   return (
     <div className="space-y-3">
       <Label className="text-sm font-medium">Imagen del producto</Label>
@@ -132,6 +137,14 @@ const ImageProcessor = ({ currentUrl, onProcessed, onProcessingChange }: ImagePr
             className="w-full h-32 object-contain rounded-lg border border-border bg-muted/50"
             onError={() => setPreview(null)}
           />
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="absolute top-1 left-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
+            title="Eliminar imagen"
+          >
+            <Trash2 size={12} />
+          </button>
           <div className="absolute top-1 right-1 bg-accent text-accent-foreground rounded-full p-0.5">
             <Check size={10} />
           </div>
