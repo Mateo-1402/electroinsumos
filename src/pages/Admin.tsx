@@ -84,7 +84,12 @@ const Admin = () => {
     navigate("/");
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen gap-3">
+      <Loader2 size={24} className="animate-spin text-primary" />
+      <span className="text-muted-foreground">Cargando...</span>
+    </div>
+  );
 
   if (!session) {
     return (
