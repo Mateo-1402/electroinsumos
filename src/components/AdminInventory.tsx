@@ -85,6 +85,11 @@ const AdminInventory = () => {
   };
 
   const handleSave = async () => {
+    if (isImageProcessing) {
+      toast.error("Espera a que termine el procesamiento de imagen");
+      return;
+    }
+
     const validation = productSchema.safeParse(form);
     if (!validation.success) { toast.error(validation.error.errors[0].message); return; }
     const payload = { ...validation.data, min_stock: form.min_stock };
