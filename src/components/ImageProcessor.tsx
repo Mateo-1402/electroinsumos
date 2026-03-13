@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, Check, ImageIcon, Sparkles } from "lucide-react";
@@ -9,11 +9,12 @@ interface ImageProcessorProps {
   currentUrl: string | null;
   onProcessed: (url: string) => void;
   brandFrameUrl?: string | null;
+  onProcessingChange?: (isProcessing: boolean) => void;
 }
 
 const DEFAULT_FRAME = "/brand-frame.png";
 
-const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME }: ImageProcessorProps) => {
+const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME, onProcessingChange }: ImageProcessorProps) => {
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState("");
   const [preview, setPreview] = useState<string | null>(currentUrl);
