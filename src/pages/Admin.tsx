@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   LogOut, LayoutDashboard, Store, Package, History, ClipboardList,
-  Wrench, Truck, ShoppingCart, FileBarChart, ChevronLeft, ChevronRight, Menu,
+  Wrench, Truck, ShoppingCart, FileBarChart, ChevronLeft, ChevronRight, Menu, Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
