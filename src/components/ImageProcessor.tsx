@@ -84,6 +84,10 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
     return data.publicUrl;
   };
 
+  useEffect(() => {
+    onProcessingChange?.(processing);
+  }, [processing, onProcessingChange]);
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -111,9 +115,10 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
       console.error("Image processing error:", err);
       toast.error(`Error: ${err.message || "Fallo en el procesamiento"}`);
       setStep("");
+    } finally {
+      setProcessing(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
-    setProcessing(false);
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (

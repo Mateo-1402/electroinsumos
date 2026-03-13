@@ -347,6 +347,7 @@ const AdminInventory = () => {
               <Input
                 placeholder="https://..."
                 value={form.image_url || ""}
+                disabled={isImageProcessing}
                 onChange={(e) => { const url = e.target.value; setForm((prev) => ({ ...prev, image_url: url || null })); setImagePreview(url || null); }}
                 className="h-10 text-xs"
               />
