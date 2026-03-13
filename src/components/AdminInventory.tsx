@@ -351,7 +351,10 @@ const AdminInventory = () => {
                 className="h-10 text-xs"
               />
             </div>
-            <Button onClick={handleSave} className="w-full gap-1 h-12 active:scale-[0.98]"><Save size={16} /> Guardar</Button>
+            <Button onClick={handleSave} disabled={isImageProcessing} className="w-full gap-1 h-12 active:scale-[0.98]">
+              {isImageProcessing ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {isImageProcessing ? "Procesando imagen..." : "Guardar"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
