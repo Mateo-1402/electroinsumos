@@ -210,10 +210,9 @@ const Catalog = () => {
         {/* Grid */}
         <main className="flex-1">
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-muted animate-pulse rounded-lg h-80" />
-              ))}
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 size={32} className="animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Cargando productos...</p>
             </div>
           ) : displayItems.length === 0 ? (
             <p className="text-muted-foreground text-center py-12">No se encontraron productos.</p>
