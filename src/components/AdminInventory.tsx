@@ -75,11 +75,12 @@ const AdminInventory = () => {
     return result;
   }, [products, selectedCategory, showOnlyOutOfStock, searchTerm]);
 
-  const openAdd = () => { setEditId(null); setForm(EMPTY); setImagePreview(null); setDialogOpen(true); };
+  const openAdd = () => { setEditId(null); setForm(EMPTY); setImagePreview(null); setIsImageProcessing(false); setDialogOpen(true); };
   const openEdit = (p: Product) => {
     setEditId(p.id);
     setForm({ code: p.code, name: p.name, category: p.category, specifications: p.specifications || "", price: p.price, unit: p.unit, stock: p.stock, min_stock: p.min_stock ?? 5, image_url: p.image_url });
     setImagePreview(p.image_url);
+    setIsImageProcessing(false);
     setDialogOpen(true);
   };
 
