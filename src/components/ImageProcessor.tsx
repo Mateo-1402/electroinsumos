@@ -1,79 +1,53 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, Check, ImageIcon, Sparkles } from "lucide-react";
+import { Upload, Loader2, Check, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 interface ImageProcessorProps {
   currentUrl: string | null;
   onProcessed: (url: string) => void;
-  brandFrameUrl?: string | null;
   onProcessingChange?: (isProcessing: boolean) => void;
 }
 
-const DEFAULT_FRAME = "/brand-frame.png";
-
-const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME, onProcessingChange }: ImageProcessorProps) => {
+const ImageProcessor = ({ currentUrl, onProcessed, onProcessingChange }: ImageProcessorProps) => {
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState("");
+  const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<string | null>(currentUrl);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const removeBg = async (file: File): Promise<Blob> => {
-    setStep("Eliminando fondo con IA...");
-    const { removeBackground } = await import("@imgly/background-removal");
-    const blob = await removeBackground(file, {
-      output: { format: "image/png", quality: 0.9 },
-    });
-    return blob;
-  };
+  useEffect(() => {
+    setPreview(currentUrl);
+  }, [currentUrl]);
 
-  const applyFrame = async (imageBlob: Blob): Promise<Blob> => {
-    if (!brandFrameUrl) return imageBlob;
-    setStep("Aplicando marco corporativo...");
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d")!;
-
-    const [productImg, frameImg] = await Promise.all([
-      createImageBitmap(imageBlob),
-      loadImage(brandFrameUrl),
-    ]);
-
-    // Use frame dimensions as canvas size
-    canvas.width = frameImg.width;
-    canvas.height = frameImg.height;
-
-    // Center product inside frame with padding
-    const pad = Math.min(canvas.width, canvas.height) * 0.1;
-    const areaW = canvas.width - pad * 2;
-    const areaH = canvas.height - pad * 2;
-    const scale = Math.min(areaW / productImg.width, areaH / productImg.height);
-    const w = productImg.width * scale;
-    const h = productImg.height * scale;
-    const x = (canvas.width - w) / 2;
-    const y = (canvas.height - h) / 2;
-
-    ctx.drawImage(productImg, x, y, w, h);
-    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-
-    return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), "image/png"));
-  };
-
-  const convertToWebP = async (imageBlob: Blob): Promise<Blob> => {
+  const convertToWebP = async (file: File): Promise<Blob> => {
     setStep("Convirtiendo a WebP...");
-    const bitmap = await createImageBitmap(imageBlob);
+    setProgress(30);
+    const bitmap = await createImageBitmap(file);
     const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
+    // Resize if too large (max 1200px)
+    const maxSize = 1200;
+    let w = bitmap.width;
+    let h = bitmap.height;
+    if (w > maxSize || h > maxSize) {
+      const scale = maxSize / Math.max(w, h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(bitmap, 0, 0);
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    setProgress(60);
     return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), "image/webp", 0.85));
   };
 
   const uploadToStorage = async (blob: Blob): Promise<string> => {
-    setStep("Subiendo a almacenamiento...");
+    setStep("Subiendo imagen...");
+    setProgress(80);
     const filename = `product_${Date.now()}.webp`;
     const { error } = await supabase.storage.from("productos").upload(filename, blob, {
       contentType: "image/webp",
@@ -81,6 +55,7 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
     });
     if (error) throw new Error(`Upload failed: ${error.message}`);
     const { data } = supabase.storage.from("productos").getPublicUrl(filename);
+    setProgress(100);
     return data.publicUrl;
   };
 
@@ -97,35 +72,28 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
     }
 
     setProcessing(true);
+    setProgress(10);
     try {
-      // Step 1: Remove background
-      let processed = await removeBg(file);
-      // Step 2: Apply branded frame overlay
-      processed = await applyFrame(processed);
-      // Step 3: Convert to WebP
-      processed = await convertToWebP(processed);
-      // Step 4: Upload to storage
-      const publicUrl = await uploadToStorage(processed);
-
+      const webp = await convertToWebP(file);
+      const publicUrl = await uploadToStorage(webp);
       setPreview(publicUrl);
       onProcessed(publicUrl);
       setStep("");
-      toast.success("Imagen procesada y subida ✅");
+      toast.success("Imagen subida ✅");
     } catch (err: any) {
-      console.error("Image processing error:", err);
-      toast.error(`Error: ${err.message || "Fallo en el procesamiento"}`);
+      console.error("Image upload error:", err);
+      toast.error(`Error: ${err.message || "Fallo al subir imagen"}`);
       setStep("");
     } finally {
       setProcessing(false);
+      setProgress(0);
       if (fileRef.current) fileRef.current.value = "";
     }
   };
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium flex items-center gap-1.5">
-        <Sparkles size={14} className="text-primary" /> Pipeline de Imagen AI
-      </Label>
+      <Label className="text-sm font-medium">Imagen del producto</Label>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
 
@@ -144,15 +112,15 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
         ) : (
           <>
             <Upload size={16} />
-            Subir imagen (BG removal + WebP)
+            Subir imagen
           </>
         )}
       </Button>
 
       {processing && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-lg p-2">
-          <Loader2 size={12} className="animate-spin" />
-          <span>{step}</span>
+        <div className="space-y-1.5">
+          <Progress value={progress} className="h-2" />
+          <p className="text-[11px] text-muted-foreground text-center">{step}</p>
         </div>
       )}
 
@@ -178,15 +146,5 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
     </div>
   );
 };
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
 
 export default ImageProcessor;
