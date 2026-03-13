@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, Check, ImageIcon, Sparkles } from "lucide-react";
@@ -9,11 +9,12 @@ interface ImageProcessorProps {
   currentUrl: string | null;
   onProcessed: (url: string) => void;
   brandFrameUrl?: string | null;
+  onProcessingChange?: (isProcessing: boolean) => void;
 }
 
 const DEFAULT_FRAME = "/brand-frame.png";
 
-const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME }: ImageProcessorProps) => {
+const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME, onProcessingChange }: ImageProcessorProps) => {
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState("");
   const [preview, setPreview] = useState<string | null>(currentUrl);
@@ -83,6 +84,10 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
     return data.publicUrl;
   };
 
+  useEffect(() => {
+    onProcessingChange?.(processing);
+  }, [processing, onProcessingChange]);
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -110,9 +115,10 @@ const ImageProcessor = ({ currentUrl, onProcessed, brandFrameUrl = DEFAULT_FRAME
       console.error("Image processing error:", err);
       toast.error(`Error: ${err.message || "Fallo en el procesamiento"}`);
       setStep("");
+    } finally {
+      setProcessing(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
-    setProcessing(false);
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (

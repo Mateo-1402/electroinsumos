@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Save, Search, AlertTriangle, PackageX } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, Search, AlertTriangle, PackageX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { productSchema } from "@/lib/validation";
@@ -36,6 +36,7 @@ const AdminInventory = () => {
   const [form, setForm] = useState(EMPTY);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -74,15 +75,21 @@ const AdminInventory = () => {
     return result;
   }, [products, selectedCategory, showOnlyOutOfStock, searchTerm]);
 
-  const openAdd = () => { setEditId(null); setForm(EMPTY); setImagePreview(null); setDialogOpen(true); };
+  const openAdd = () => { setEditId(null); setForm(EMPTY); setImagePreview(null); setIsImageProcessing(false); setDialogOpen(true); };
   const openEdit = (p: Product) => {
     setEditId(p.id);
     setForm({ code: p.code, name: p.name, category: p.category, specifications: p.specifications || "", price: p.price, unit: p.unit, stock: p.stock, min_stock: p.min_stock ?? 5, image_url: p.image_url });
     setImagePreview(p.image_url);
+    setIsImageProcessing(false);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
+    if (isImageProcessing) {
+      toast.error("Espera a que termine el procesamiento de imagen");
+      return;
+    }
+
     const validation = productSchema.safeParse(form);
     if (!validation.success) { toast.error(validation.error.errors[0].message); return; }
     const payload = { ...validation.data, min_stock: form.min_stock };
@@ -333,17 +340,22 @@ const AdminInventory = () => {
                 setForm((prev) => ({ ...prev, image_url: url }));
                 setImagePreview(url);
               }}
+              onProcessingChange={setIsImageProcessing}
             />
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">O pegar URL directa</Label>
               <Input
                 placeholder="https://..."
                 value={form.image_url || ""}
+                disabled={isImageProcessing}
                 onChange={(e) => { const url = e.target.value; setForm((prev) => ({ ...prev, image_url: url || null })); setImagePreview(url || null); }}
                 className="h-10 text-xs"
               />
             </div>
-            <Button onClick={handleSave} className="w-full gap-1 h-12 active:scale-[0.98]"><Save size={16} /> Guardar</Button>
+            <Button onClick={handleSave} disabled={isImageProcessing} className="w-full gap-1 h-12 active:scale-[0.98]">
+              {isImageProcessing ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {isImageProcessing ? "Procesando imagen..." : "Guardar"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
